@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard · Automated Phishing Link & Email Analyzer</title>
+  <!-- Google Font & Font Awesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* ---------- ANIMATIONS ---------- */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(0, 168, 107, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 12px rgba(0, 168, 107, 0);
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -400px 0;
+      }
+      100% {
+        background-position: 400px 0;
+      }
+    }
+
+    @keyframes bounceIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.3);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+      70% {
+        transform: scale(0.95);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    @keyframes floatIcon {
+      0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-6px) rotate(2deg);
+      }
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -1000;
+      }
+    }
+
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-3deg); }
+      75% { transform: rotate(3deg); }
+    }
+
+    @keyframes barGrow {
+      from { width: 0%; }
+      to { width: var(--target-width); }
+    }
+
+    body {
+      background: radial-gradient(circle at 30% 10%, #e8fdf3 0%, #d0f5e0 100%);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      color: #0a2e1f;
+      overflow-x: hidden;
+    }
+
+    /* Animated background orbs */
+    body::before,
+    body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(60px);
+      opacity: 0.4;
+    }
+
+    body::before {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, #7ce8b8, transparent 70%);
+      top: -100px;
+      left: -100px;
+      animation: floatIcon 12s ease-in-out infinite;
+    }
+
+    body::after {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #a8f0cc, transparent 70%);
+      bottom: -150px;
+      right: -150px;
+      animation: floatIcon 16s ease-in-out infinite reverse;
+    }
+
+    .main-card {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      border-radius: 2.5rem;
+      padding: 2rem 2.5rem;
+      box-shadow: 0 20px 40px -12px rgba(0, 100, 60, 0.25), 0 0 0 1px rgba(0, 180, 100, 0.15);
+      border: 1px solid rgba(0, 200, 110, 0.3);
+      animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header i {
+      font-size: 2.5rem;
+      color: #00a86b;
+      filter: drop-shadow(0 4px 8px rgba(0, 168, 107, 0.3));
+      animation: floatIcon 4s ease-in-out infinite;
+    }
+
+    .header h1 {
+      font-weight: 700;
+      font-size: 2rem;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #004d2e, #00a86b);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      background-size: 200% auto;
+      animation: shimmer 4s linear infinite;
+    }
+
+    .subhead {
+      color: #3d7a5c;
+      margin-left: 3.6rem;
+      margin-top: -0.3rem;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: slideInLeft 0.6s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .subhead i {
+      color: #00a86b;
+      font-size: 0.75rem;
+      animation: pulseGlow 2s ease-in-out infinite;
+      border-radius: 50%;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #b8e6cc;
+      padding-bottom: 0.75rem;
+      animation: fadeInUp 0.6s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 0.6rem 1.6rem;
+      border-radius: 3rem;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #4d8a6a;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.2px;
+      border: 1px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab-btn i {
+      font-size: 1rem;
+      transition: transform 0.3s ease;
+    }
+
+    .tab-btn.active {
+      background: #d6f5e3;
+      color: #006b40;
+      border: 1px solid #8cd9b8;
+      box-shadow: 0 4px 10px -2px rgba(0, 168, 107, 0.2);
+      animation: fadeInScale 0.3s ease;
+    }
+
+    .tab-btn.active i {
+      animation: wiggle 0.5s ease;
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: #e8f9f0;
+      color: #0a4a2e;
+      transform: translateY(-2px);
+    }
+
+    .tab-btn:hover:not(.active) i {
+      transform: scale(1.15);
+    }
+
+    .input-area {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      animation: fadeInUp 0.6s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .input-area.hidden {
+      display: none;
+    }
+
+    .input-area label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #0a4a2e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: 0.2px;
+    }
+
+    .input-area label i {
+      color: #00a86b;
+      width: 1.2rem;
+      transition: transform 0.3s ease;
+    }
+
+    .input-area:focus-within label i {
+      transform: scale(1.2) rotate(-5deg);
+    }
+
+    .input-wrapper {
+      display: flex;
+      background: #ffffff;
+      border-radius: 1.5rem;
+      border: 1px solid #b8e6cc;
+      transition: border 0.3s, box-shadow 0.3s, transform 0.3s;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 100, 60, 0.05);
+    }
+
+    .input-wrapper:hover {
+      border-color: #8cd9b8;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px -6px rgba(0, 168, 107, 0.2);
+    }
+
+    .input-wrapper:focus-within {
+      border-color: #00a86b;
+      box-shadow: 0 0 0 4px rgba(0, 168, 107, 0.15), 0 8px 20px -6px rgba(0, 168, 107, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .input-wrapper input,
+    .input-wrapper textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 1rem 1.5rem;
+      font-size: 0.95rem;
+      color: #0a2e1f;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      resize: vertical;
+      min-height: 56px;
+      transition: color 0.3s;
+    }
+
+    .input-wrapper textarea {
+      min-height: 110px;
+      line-height: 1.5;
+    }
+
+    .input-wrapper input::placeholder,
+    .input-wrapper textarea::placeholder {
+      color: #7aae94;
+      font-weight: 400;
+      transition: color 0.3s;
+    }
+
+    .input-wrapper input:focus::placeholder,
+    .input-wrapper textarea:focus::placeholder {
+      color: #a8d8be;
+    }
+
+    .analyze-btn {
+      background: linear-gradient(135deg, #00a86b, #008754);
+      border: none;
+      border-radius: 3rem;
+      padding: 1rem 2rem;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      box-shadow: 0 10px 20px -8px rgba(0, 135, 84, 0.5);
+      font-family: 'Inter', sans-serif;
+      border: 1px solid #5ccf9a;
+      margin-top: 0.5rem;
+      position: relative;
+      overflow: hidden;
+      animation: fadeInUp 0.6s 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .analyze-btn::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+      transition: left 0.6s ease;
+    }
+
+    .analyze-btn:hover::after {
+      left: 100%;
+    }
+
+    .analyze-btn:hover {
+      background: linear-gradient(135deg, #00c47d, #009960);
+      box-shadow: 0 12px 24px -8px #008754, 0 0 0 4px rgba(0, 168, 107, 0.15);
+      transform: translateY(-3px) scale(1.02);
+    }
+
+    .analyze-btn:active {
+      transform: translateY(0) scale(0.98);
+      box-shadow: 0 6px 12px -6px #008754;
+    }
+
+    .analyze-btn i {
+      font-size: 1.1rem;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .analyze-btn:hover i {
+      transform: rotate(180deg) scale(1.2);
+    }
+
+    .analyze-btn.loading {
+      pointer-events: none;
+      animation: pulseGlow 1s ease-in-out infinite;
+    }
+
+    .analyze-btn.loading i {
+      animation: spinSlow 0.8s linear infinite;
+    }
+
+    .result-panel {
+      background: #f4fdf8;
+      border-radius: 1.8rem;
+      padding: 1.8rem 2rem;
+      border: 1px solid #c5e9d6;
+      margin-top: 0.8rem;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: inset 0 2px 10px rgba(0, 100, 60, 0.05);
+      animation: fadeInUp 0.6s 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+      overflow: hidden;
+    }
+
+    .result-panel.has-result {
+      border-color: #8cd9b8;
+      box-shadow: inset 0 2px 10px rgba(0, 100, 60, 0.05), 0 8px 24px -8px rgba(0, 168, 107, 0.25);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 1.8rem;
+      animation: fadeInUp 0.5s ease both;
+    }
+
+    .result-header i {
+      font-size: 1.8rem;
+      color: #00a86b;
+    }
+
+    .result-header h3 {
+      font-weight: 600;
+      font-size: 1.3rem;
+      color: #004d2e;
+    }
+
+    .verdict-badge {
+      margin-left: auto;
+      padding: 0.4rem 1.4rem;
+      border-radius: 3rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      background: #eaf0f6;
+      color: #4d8a6a;
+      border: 1px solid #c5e9d6;
+      transition: all 0.3s ease;
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    .badge-safe {
+      background: #d6f5e3;
+      color: #006b40;
+      border-color: #8cd9b8;
+      box-shadow: 0 4px 8px -2px rgba(0, 150, 100, 0.2), 0 0 0 0 rgba(0, 168, 107, 0.3);
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulseGlow 2.5s 0.6s ease-in-out infinite;
+    }
+
+    .badge-suspicious {
+      background: #fef4d9;
+      color: #9e6f00;
+      border-color: #f0d48c;
+      box-shadow: 0 4px 8px -2px rgba(200, 150, 0, 0.2);
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, wiggle 0.6s 0.6s ease-in-out;
+    }
+
+    .badge-phishing {
+      background: #ffe6e6;
+      color: #b32b2b;
+      border-color: #f0a0a0;
+      box-shadow: 0 4px 8px -2px rgba(200, 50, 50, 0.2);
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, wiggle 0.4s 0.6s ease-in-out 3;
+    }
+
+    .indicators-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .indicator-item {
+      background: #ffffff;
+      border-radius: 1.2rem;
+      padding: 1rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border: 1px solid #c5e9d6;
+      box-shadow: 0 2px 6px rgba(0, 100, 60, 0.04);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .indicator-item:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 10px 20px -8px rgba(0, 168, 107, 0.25);
+      border-color: #8cd9b8;
+    }
+
+    /* Staggered animation delays */
+    .indicator-item:nth-child(1) { animation-delay: 0.1s; }
+    .indicator-item:nth-child(2) { animation-delay: 0.2s; }
+    .indicator-item:nth-child(3) { animation-delay: 0.3s; }
+    .indicator-item:nth-child(4) { animation-delay: 0.4s; }
+
+    .indicator-icon {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #d6f5e3;
+      color: #00a86b;
+      font-size: 1rem;
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+    }
+
+    .indicator-item:hover .indicator-icon {
+      transform: rotate(360deg) scale(1.15);
+      background: #b8e6cc;
+    }
+
+    .indicator-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .indicator-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #5a8a72;
+      font-weight: 600;
+    }
+
+    .indicator-value {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #004d2e;
+      word-break: break-word;
+    }
+
+    .reason-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .reason-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.8rem;
+      font-size: 0.95rem;
+      color: #0a4a2e;
+      background: #ffffff;
+      padding: 0.7rem 1.2rem;
+      border-radius: 1rem;
+      border-left: 4px solid #00a86b;
+      box-shadow: 0 2px 6px rgba(0, 100, 60, 0.04);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Staggered animation for reasons */
+    .reason-list li:nth-child(1) { animation-delay: 0.1s; }
+    .reason-list li:nth-child(2) { animation-delay: 0.18s; }
+    .reason-list li:nth-child(3) { animation-delay: 0.26s; }
+    .reason-list li:nth-child(4) { animation-delay: 0.34s; }
+    .reason-list li:nth-child(5) { animation-delay: 0.42s; }
+    .reason-list li:nth-child(6) { animation-delay: 0.5s; }
+    .reason-list li:nth-child(7) { animation-delay: 0.58s; }
+    .reason-list li:nth-child(8) { animation-delay: 0.66s; }
+
+    .reason-list li:hover {
+      transform: translateX(6px);
+      border-left-color: #00c47d;
+      box-shadow: 0 4px 12px -4px rgba(0, 168, 107, 0.25);
+    }
+
+    .reason-list li i {
+      color: #00a86b;
+      margin-top: 0.15rem;
+      transition: transform 0.3s ease;
+    }
+
+    .reason-list li:hover i {
+      transform: scale(1.2);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      color: #6a9e82;
+      text-align: center;
+      gap: 1rem;
+      animation: fadeInUp 0.6s ease both;
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      color: #a8d8be;
+      animation: floatIcon 3s ease-in-out infinite;
+    }
+
+    .empty-state p {
+      font-size: 0.95rem;
+      max-width: 400px;
+    }
+
+    .footer-note {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #5a8a72;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      border-top: 1px solid #c5e9d6;
+      padding-top: 1.5rem;
+      animation: fadeInUp 0.6s 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .footer-note i {
+      animation: pulseGlow 2s ease-in-out infinite;
+      border-radius: 50%;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+      .main-card {
+        padding: 1.5rem;
+      }
+      .indicators-grid {
+        grid-template-columns: 1fr;
+      }
+      .header h1 {
+        font-size: 1.6rem;
+      }
+      .tab-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+      }
+      .subhead {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-card">
+    <!-- Header -->
+    <div class="header">
+      <i class="fas fa-shield-hal"></i>
+      <h1>PhishGuard Analyzer</h1>
+    </div>
+    <div class="subhead">
+      <i class="fas fa-bolt"></i> Automated phishing link & email inspection
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tabLink" data-tab="link">
+        <i class="fas fa-link"></i> URL / Link
+      </button>
+      <button class="tab-btn" id="tabEmail" data-tab="email">
+        <i class="fas fa-envelope"></i> Email content
+      </button>
+    </div>
+
+    <!-- Link input area -->
+    <div id="linkInputArea" class="input-area">
+      <label><i class="fas fa-globe"></i> Enter suspicious URL</label>
+      <div class="input-wrapper">
+        <input type="text" id="urlInput" placeholder="https://example-secure-login.com/verify?user=..." value="http://paypal-account-verify.xyz/login">
+      </div>
+    </div>
+
+    <!-- Email input area (hidden by default) -->
+    <div id="emailInputArea" class="input-area hidden">
+      <label><i class="fas fa-paste"></i> Paste email content (headers + body)</label>
+      <div class="input-wrapper">
+        <textarea id="emailInput" placeholder="From: support@bank-secure.com&#10;Subject: Urgent: Your account is locked&#10;&#10;Dear customer, click here to restore access: http://bit.ly/3xYzAbC ...">From: security@paypa1-alerts.com
+Subject: Urgent: Your account has been limited
+Dear user,
+We detected unusual activity. Please confirm your identity immediately:
+http://paypa1-verification.work/secure
+Failure to comply will result in account suspension.
+</textarea>
+      </div>
+    </div>
+
+    <!-- Analyze button -->
+    <button class="analyze-btn" id="analyzeBtn">
+      <i class="fas fa-radar"></i> Analyze now
+    </button>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <div class="empty-state" id="emptyState">
+        <i class="fas fa-shield-virus"></i>
+        <p>Enter a link or email content, then click <strong>Analyze now</strong> to check for phishing indicators.</p>
+      </div>
+      <div id="resultContent" class="hidden">
+        <div class="result-header">
+          <i class="fas fa-clipboard-check"></i>
+          <h3>Analysis Report</h3>
+          <span class="verdict-badge" id="verdictBadge">—</span>
+        </div>
+
+        <div class="indicators-grid" id="indicatorsGrid">
+          <!-- filled dynamically -->
+        </div>
+
+        <div style="margin-top: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+            <i class="fas fa-triangle-exclamation" style="color:#e6a800; animation: wiggle 0.8s ease-in-out infinite;"></i>
+            <span style="font-weight: 600; font-size: 0.95rem; color:#004d2e;">Why this verdict?</span>
+          </div>
+          <ul class="reason-list" id="reasonList">
+            <!-- dynamic reasons -->
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      <i class="fas fa-lock"></i> Automated heuristic analysis · No data leaves your browser
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // --- DOM elements ---
+      const tabLink = document.getElementById('tabLink');
+      const tabEmail = document.getElementById('tabEmail');
+      const linkInputArea = document.getElementById('linkInputArea');
+      const emailInputArea = document.getElementById('emailInputArea');
+      const urlInput = document.getElementById('urlInput');
+      const emailInput = document.getElementById('emailInput');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      const emptyState = document.getElementById('emptyState');
+      const resultContent = document.getElementById('resultContent');
+      const verdictBadge = document.getElementById('verdictBadge');
+      const indicatorsGrid = document.getElementById('indicatorsGrid');
+      const reasonList = document.getElementById('reasonList');
+      const resultPanel = document.getElementById('resultPanel');
+
+      let activeTab = 'link'; // 'link' or 'email'
+
+      // --- Tab switching with animation ---
+      tabLink.addEventListener('click', () => {
+        activeTab = 'link';
+        tabLink.classList.add('active');
+        tabEmail.classList.remove('active');
+        linkInputArea.classList.remove('hidden');
+        emailInputArea.classList.add('hidden');
+        // Re-trigger animation
+        linkInputArea.style.animation = 'none';
+        void linkInputArea.offsetWidth;
+        linkInputArea.style.animation = 'fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both';
+      });
+
+      tabEmail.addEventListener('click', () => {
+        activeTab = 'email';
+        tabEmail.classList.add('active');
+        tabLink.classList.remove('active');
+        emailInputArea.classList.remove('hidden');
+        linkInputArea.classList.add('hidden');
+        // Re-trigger animation
+        emailInputArea.style.animation = 'none';
+        void emailInputArea.offsetWidth;
+        emailInputArea.style.animation = 'fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both';
+      });
+
+      // --- Helper: reset panel to empty state ---
+      function showEmptyState() {
+        emptyState.classList.remove('hidden');
+        resultContent.classList.add('hidden');
+        resultPanel.classList.remove('has-result');
+      }
+
+      // --- Helper: display results with staggered animations ---
+      function displayResults(verdict, indicators, reasons) {
+        emptyState.classList.add('hidden');
+        resultContent.classList.remove('hidden');
+        resultPanel.classList.add('has-result');
+
+        // Reset animations by re-triggering
+        resultContent.style.animation = 'none';
+        void resultContent.offsetWidth;
+        resultContent.style.animation = 'fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1) both';
+
+        // Verdict badge — retrigger bounce animation
+        verdictBadge.textContent = verdict;
+        verdictBadge.className = 'verdict-badge';
+        if (verdict.toLowerCase() === 'safe') {
+          verdictBadge.classList.add('badge-safe');
+        } else if (verdict.toLowerCase() === 'suspicious') {
+          verdictBadge.classList.add('badge-suspicious');
+        } else if (verdict.toLowerCase() === 'phishing') {
+          verdictBadge.classList.add('badge-phishing');
+        }
+        // Re-trigger animation
+        verdictBadge.style.animation = 'none';
+        void verdictBadge.offsetWidth;
+        if (verdict.toLowerCase() === 'safe') {
+          verdictBadge.style.animation = 'bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulseGlow 2.5s 0.6s ease-in-out infinite';
+        } else if (verdict.toLowerCase() === 'suspicious') {
+          verdictBadge.style.animation = 'bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, wiggle 0.6s 0.6s ease-in-out';
+        } else {
+          verdictBadge.style.animation = 'bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, wiggle 0.4s 0.6s ease-in-out 3';
+        }
+
+        // Build indicators grid with stagger
+        indicatorsGrid.innerHTML = '';
+        indicators.forEach((ind, idx) => {
+          const item = document.createElement('div');
+          item.className = 'indicator-item';
+          item.style.animation = 'none';
+          item.innerHTML = `
+            <div class="indicator-icon"><i class="${ind.icon}"></i></div>
+            <div class="indicator-content">
+              <span class="indicator-label">${ind.label}</span>
+              <span class="indicator-value">${ind.value}</span>
+            </div>
+          `;
+          indicatorsGrid.appendChild(item);
+          // Trigger staggered animation
+          void item.offsetWidth;
+          item.style.animation = `fadeInScale 0.5s ${0.1 + idx * 0.08}s cubic-bezier(0.16, 1, 0.3, 1) both`;
+        });
+
+        // Reasons list with stagger
+        reasonList.innerHTML = '';
+        if (reasons.length === 0) {
+          const li = document.createElement('li');
+          li.innerHTML = `<i class="fas fa-check-circle"></i> No suspicious indicators found.`;
+          li.style.animation = 'slideInLeft 0.5s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both';
+          reasonList.appendChild(li);
+        } else {
+          reasons.forEach((reason, idx) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<i class="fas fa-circle-exclamation"></i> ${reason}`;
+            li.style.animation = 'none';
+            reasonList.appendChild(li);
+            void li.offsetWidth;
+            li.style.animation = `slideInLeft 0.5s ${0.1 + idx * 0.07}s cubic-bezier(0.16, 1, 0.3, 1) both`;
+          });
+        }
+      }
+
+      // --- Core analysis functions (HEURISTIC) ---
+
+      // URL analyzer
+      function analyzeUrl(url) {
+        if (!url || url.trim() === '') {
+          return {
+            verdict: 'Suspicious',
+            indicators: [
+              { icon: 'fas fa-link', label: 'URL', value: '(empty)' },
+              { icon: 'fas fa-exclamation', label: 'Status', value: 'No URL provided' }
+            ],
+            reasons: ['Empty URL — cannot analyze. Please enter a valid link.']
+          };
+        }
+
+        const rawUrl = url.trim();
+        const lowerUrl = rawUrl.toLowerCase();
+
+        const reasons = [];
+        let riskScore = 0;
+        let usesHttps = false;
+        let hasIp = false;
+        let hasSuspiciousTld = false;
+        let hasLongUrl = false;
+        let hasAtSymbol = false;
+        let hasHyphenInDomain = false;
+        let hasManySubdomains = false;
+        let hasPunycode = false;
+        let hasSensitiveKeywords = false;
+
+        // 1. HTTPS check
+        if (lowerUrl.startsWith('https://')) {
+          usesHttps = true;
+        } else {
+          reasons.push('URL does not use HTTPS (insecure connection).');
+          riskScore += 1;
+        }
+
+        // 2. IP address instead of domain
+        const ipPattern = /^https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/;
+        if (ipPattern.test(lowerUrl)) {
+          hasIp = true;
+          reasons.push('URL uses an IP address instead of a domain name — common in phishing.');
+          riskScore += 2;
+        }
+
+        // 3. Suspicious TLDs
+        const suspiciousTlds = ['.xyz', '.top', '.work', '.click', '.link', '.loan', '.men', '.date', '.bid', '.stream', '.download', '.racing', '.party', '.review', '.trade', '.webcam', '.win', '.accountant', '.science', '.gq', '.ml', '.cf', '.tk', '.ga'];
+        const domainMatch = rawUrl.match(/^https?:\/\/([^\/:]+)/i);
+        let domain = '';
+        if (domainMatch && domainMatch[1]) {
+          domain = domainMatch[1].toLowerCase();
+        }
+
+        for (let tld of suspiciousTlds) {
+          if (domain.endsWith(tld) || lowerUrl.includes(tld + '/')) {
+            hasSuspiciousTld = true;
+            reasons.push(`Suspicious top-level domain (${tld}) often used in phishing campaigns.`);
+            riskScore += 2;
+            break;
+          }
+        }
+
+        // 4. URL length > 75
+        if (rawUrl.length > 75) {
+          hasLongUrl = true;
+          reasons.push('URL is unusually long (>75 characters) — may hide malicious parts.');
+          riskScore += 1;
+        }
+
+        // 5. '@' symbol in URL
+        if (rawUrl.includes('@')) {
+          hasAtSymbol = true;
+          reasons.push('Contains "@" symbol — may redirect to a different domain than shown.');
+          riskScore += 2;
+        }
+
+        // 6. Hyphen in domain
+        if (domain.includes('-')) {
+          hasHyphenInDomain = true;
+          reasons.push('Domain contains hyphens — often used in fake domains (e.g., paypal-secure.com).');
+          riskScore += 1;
+        }
+
+        // 7. Many subdomains
+        const dotCount = (domain.match(/\./g) || []).length;
+        if (dotCount >= 3) {
+          hasManySubdomains = true;
+          reasons.push('Many subdomains (possible obfuscation or free hosting abuse).');
+          riskScore += 1;
+        }
+
+        // 8. Punycode
+        if (domain.includes('xn--') || /[^\x00-\x7F]/.test(domain)) {
+          hasPunycode = true;
+          reasons.push('Punycode / non-ASCII characters in domain (possible homograph attack).');
+          riskScore += 3;
+        }
+
+        // 9. Sensitive keywords
+        const sensitiveWords = ['login', 'verify', 'account', 'secure', 'update', 'signin', 'banking', 'password', 'confirm', 'security', 'alert', 'urgent', 'paypal', 'netflix', 'amazon', 'apple', 'microsoft', 'office', 'support'];
+        let keywordFound = [];
+        for (let word of sensitiveWords) {
+          if (lowerUrl.includes(word)) {
+            keywordFound.push(word);
+          }
+        }
+        if (keywordFound.length > 0) {
+          hasSensitiveKeywords = true;
+          reasons.push(`Contains sensitive keyword(s): ${keywordFound.join(', ')}. Often used to lure victims.`);
+          riskScore += 1;
+        }
+
+        // 10. Multiple "//"
+        if (lowerUrl.includes('//') && lowerUrl.indexOf('//') !== lowerUrl.lastIndexOf('//')) {
+          reasons.push('Multiple "//" in URL (possible redirect obfuscation).');
+          riskScore += 1;
+        }
+
+        // Numeric domains
+        if (/\d{5,}/.test(domain)) {
+          reasons.push('Domain contains long numeric sequence — suspicious.');
+          riskScore += 1;
+        }
+
+        // Verdict
+        let verdict = 'Safe';
+        if (riskScore >= 5) verdict = 'Phishing';
+        else if (riskScore >= 2) verdict = 'Suspicious';
+
+        // Indicators
+        const indicators = [];
+        indicators.push({ icon: 'fas fa-link', label: 'URL', value: rawUrl.length > 50 ? rawUrl.substring(0, 50) + '…' : rawUrl });
+        indicators.push({ icon: 'fas fa-lock', label: 'HTTPS', value: usesHttps ? 'Yes' : 'No' });
+        indicators.push({ icon: 'fas fa-globe', label: 'Domain', value: domain || 'unknown' });
+
+        if (riskScore >= 2) {
+          indicators.push({ icon: 'fas fa-bug', label: 'Risk score', value: `${riskScore} / 10` });
+        } else {
+          indicators.push({ icon: 'fas fa-check-circle', label: 'Risk score', value: `${riskScore} / 10 (low)` });
+        }
+
+        if (reasons.length === 0) {
+          reasons.push('No obvious phishing indicators detected. Stay cautious anyway.');
+        }
+
+        return { verdict, indicators, reasons };
+      }
+
+      // Email analyzer
+      function analyzeEmail(emailText) {
+        if (!emailText || emailText.trim() === '') {
+          return {
+            verdict: 'Suspicious',
+            indicators: [
+              { icon: 'fas fa-envelope', label: 'Content', value: '(empty)' },
+              { icon: 'fas fa-exclamation', label: 'Status', value: 'No email content' }
+            ],
+            reasons: ['Empty email — cannot analyze.']
+          };
+        }
+
+        const text = emailText.trim();
+        const lowerText = text.toLowerCase();
+        const reasons = [];
+        let riskScore = 0;
+
+        const urlRegex = /(https?:\/\/[^\s]+)/gi;
+        const urls = text.match(urlRegex) || [];
+        const urlCount = urls.length;
+
+        let fromSuspicious = false;
+        let hasUrgent = false;
+        let hasGenericGreeting = false;
+        let hasSensitiveRequest = false;
+        let hasLinkMismatch = false;
+        let hasAttachmentMention = false;
+        let hasSpoofedDomain = false;
+
+        // 1. From extraction
+        const fromMatch = text.match(/from:.*?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+        let fromEmail = fromMatch ? fromMatch[1] : null;
+        if (!fromEmail) {
+          const anyEmail = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+          if (anyEmail) fromEmail = anyEmail[1];
+        }
+
+        if (fromEmail) {
+          const domainPart = fromEmail.split('@')[1] || '';
+          const freeDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'aol.com', 'protonmail.com', 'mail.ru', 'yandex.com'];
+          if (freeDomains.includes(domainPart.toLowerCase())) {
+            reasons.push(`Sender uses free email domain (${domainPart}) — often used in phishing.`);
+            riskScore += 2;
+          }
+          if (domainPart.includes('paypa1') || domainPart.includes('micros0ft') || domainPart.includes('app1e') || domainPart.includes('netfl1x')) {
+            reasons.push(`Sender domain "${domainPart}" mimics a well-known brand.`);
+            riskScore += 3;
+          }
+          if (domainPart.includes('-') && domainPart.split('-').length > 2) {
+            reasons.push('Sender domain contains many hyphens — suspicious.');
+            riskScore += 1;
+          }
+        } else {
+          reasons.push('Could not extract sender email address.');
+          riskScore += 1;
+        }
+
+        // 2. Urgency
+        const urgencyWords = ['urgent', 'immediately', 'action required', 'account suspended', 'verify now', 'limited time', 'click here', 'failure to comply', 'important notice', 'security alert', 'unauthorized', 'locked'];
+        let urgencyFound = [];
+        for (let word of urgencyWords) {
+          if (lowerText.includes(word)) {
+            urgencyFound.push(word);
+          }
+        }
+        if (urgencyFound.length > 0) {
+          hasUrgent = true;
+          reasons.push(`Urgency / threatening language: "${urgencyFound.slice(0, 3).join(', ')}" — common phishing tactic.`);
+          riskScore += 2;
+        }
+
+        // 3. Generic greeting
+        const genericGreetings = ['dear customer', 'dear user', 'dear member', 'dear valued customer', 'hello user', 'dear account holder'];
+        for (let greet of genericGreetings) {
+          if (lowerText.includes(greet)) {
+            hasGenericGreeting = true;
+            reasons.push(`Generic greeting: "${greet}" — lacks personalization.`);
+            riskScore += 1;
+            break;
+          }
+        }
+
+        // 4. Sensitive requests
+        const sensitiveRequests = ['password', 'credit card', 'social security', 'ssn', 'verify your account', 'confirm your identity', 'update your payment', 'login credentials', 'click the link below', 'bank account'];
+        let sensitiveFound = [];
+        for (let req of sensitiveRequests) {
+          if (lowerText.includes(req)) {
+            sensitiveFound.push(req);
+          }
+        }
+        if (sensitiveFound.length > 0) {
+          hasSensitiveRequest = true;
+          reasons.push(`Requests sensitive information: "${sensitiveFound.slice(0, 3).join(', ')}".`);
+          riskScore += 2;
+        }
+
+        // 5. URLs
+        if (urlCount === 0) {
+          reasons.push('No URLs found in email — usually safe, but could be social engineering.');
+        } else {
+          let suspiciousUrlCount = 0;
+          urls.forEach(u => {
+            if (!u.startsWith('https://')) suspiciousUrlCount++;
+            if (u.includes('bit.ly') || u.includes('tinyurl') || u.includes('goo.gl') || u.includes('ow.ly') || u.includes('is.gd')) {
+              reasons.push(`URL shortener detected (${u}) — hides final destination.`);
+              riskScore += 2;
+            }
+          });
+          if (suspiciousUrlCount > 0) {
+            reasons.push(`${suspiciousUrlCount} URL(s) do not use HTTPS.`);
+            riskScore += 1;
+          }
+          if (lowerText.includes('click here') || lowerText.includes('click the link')) {
+            reasons.push('Contains "click here" / "click the link" phrasing — common in phishing.');
+            riskScore += 1;
+          }
+        }
+
+        // 6. Attachments
+        if (lowerText.includes('attached') || lowerText.includes('attachment') || lowerText.includes('invoice') || lowerText.includes('receipt')) {
+          hasAttachmentMention = true;
+          reasons.push('Mentions attachments or invoices — may carry malware.');
+          riskScore += 1;
+        }
+
+        // 7. Spoofed brands
+        const knownBrands = ['paypal', 'microsoft', 'apple', 'amazon', 'netflix', 'bankofamerica', 'wellsfargo', 'chase', 'facebook', 'instagram'];
+        for (let brand of knownBrands) {
+          if (lowerText.includes(brand) && !lowerText.includes(brand + '.com')) {
+            reasons.push(`Mentions "${brand}" but no official domain found.`);
+            riskScore += 1;
+            break;
+          }
+        }
+
+        const displayScore = Math.min(riskScore, 10);
+        let verdict = 'Safe';
+        if (riskScore >= 6) verdict = 'Phishing';
+        else if (riskScore >= 3) verdict = 'Suspicious';
+
+        const indicators = [
+          { icon: 'fas fa-envelope', label: 'Email length', value: `${text.length} chars` },
+          { icon: 'fas fa-link', label: 'URLs found', value: urlCount },
+          { icon: 'fas fa-user', label: 'Sender', value: fromEmail ? (fromEmail.length > 30 ? fromEmail.substring(0,30)+'…' : fromEmail) : 'unknown' },
+          { icon: 'fas fa-bug', label: 'Risk score', value: `${displayScore} / 10` }
+        ];
+
+        if (reasons.length === 0) {
+          reasons.push('No immediate phishing indicators. Always verify sender identity.');
+        }
+
+        return { verdict, indicators, reasons };
+      }
+
+      // --- Main analyze handler with loading animation ---
+      function runAnalysis() {
+        // Add loading state
+        analyzeBtn.classList.add('loading');
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner"></i> Analyzing...';
+
+        // Small delay to show loading animation (simulate analysis time)
+        setTimeout(() => {
+          if (activeTab === 'link') {
+            const url = urlInput.value;
+            const result = analyzeUrl(url);
+            displayResults(result.verdict, result.indicators, result.reasons);
+          } else {
+            const email = emailInput.value;
+            const result = analyzeEmail(email);
+            displayResults(result.verdict, result.indicators, result.reasons);
+          }
+
+          // Remove loading state
+          analyzeBtn.classList.remove('loading');
+          analyzeBtn.innerHTML = '<i class="fas fa-radar"></i> Analyze now';
+        }, 400);
+      }
+
+      // --- Event listener ---
+      analyzeBtn.addEventListener('click', runAnalysis);
+
+      // Allow pressing Enter in URL input
+      urlInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          runAnalysis();
+        }
+      });
+
+      // Initialize empty state
+      showEmptyState();
+    })();
+  </script>
+</body>
+</html>
